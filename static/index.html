@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBC Documentary TTS | Professional Narrator Voice</title>
+    <meta name="description" content="Convert your text to professional BBC documentary-style narration with AI voices">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" x2="12" y1="19" y2="22" />
+                </svg>
+                <h1>Documentary TTS</h1>
+            </div>
+            <p class="tagline">Transform your text into BBC-style professional narration</p>
+        </header>
+
+        <main class="main-content">
+            <div class="card">
+                <div class="input-section">
+                    <label for="text-input" class="label">
+                        <span>Your Script</span>
+                        <span class="char-count"><span id="char-count">0</span> / 5000</span>
+                    </label>
+                    <textarea id="text-input" class="textarea"
+                        placeholder="Enter your text here... For example: 'In the heart of the African savanna, a remarkable story unfolds. Here, where the sun paints the sky in shades of amber and gold, life persists in ways that defy imagination.'"
+                        maxlength="5000"></textarea>
+                </div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="voice-select" class="label">Voice</label>
+                        <select id="voice-select" class="select">
+                            <optgroup label="🎬 Studio - Documentary/Broadcast">
+                                <option value="en-GB-Studio-B" selected>🇬🇧 British Male (Studio) - Best for Wildlife
+                                </option>
+                                <option value="en-GB-Studio-C">🇬🇧 British Female (Studio)</option>
+                                <option value="en-US-Studio-O">🇺🇸 American Male (Studio)</option>
+                                <option value="en-US-Studio-Q">🇺🇸 American Female (Studio)</option>
+                            </optgroup>
+                            <optgroup label="🌟 Chirp3-HD - Ultra Natural">
+                                <option value="en-GB-Chirp3-HD-Charon">🇬🇧 British (Charon) - Ultra Natural</option>
+                                <option value="en-GB-Chirp3-HD-Fenrir">🇬🇧 British (Fenrir) - Deep Narrator</option>
+                                <option value="en-GB-Chirp3-HD-Aoede">🇬🇧 British (Aoede) - Warm Female</option>
+                                <option value="en-US-Chirp3-HD-Charon">🇺🇸 American (Charon)</option>
+                            </optgroup>
+                            <optgroup label="📻 Neural2 - Standard HD">
+                                <option value="en-GB-Neural2-B">🇬🇧 British Male (Daniel)</option>
+                                <option value="en-GB-Neural2-D">🇬🇧 British Male (James)</option>
+                                <option value="en-GB-Neural2-A">🇬🇧 British Female (Emma)</option>
+                                <option value="en-GB-Neural2-C">🇬🇧 British Female (Olivia)</option>
+                                <option value="en-US-Neural2-D">🇺🇸 American Male (David)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="speed-range" class="label">
+                            Speed: <span id="speed-value">0.90</span>x
+                        </label>
+                        <input type="range" id="speed-range" class="range" min="0.5" max="1.5" step="0.05" value="0.9">
+                        <div class="range-labels">
+                            <span>Slower</span>
+                            <span>Faster</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="pitch-range" class="label">
+                            Pitch: <span id="pitch-value">-2.0</span>
+                        </label>
+                        <input type="range" id="pitch-range" class="range" min="-10" max="10" step="0.5" value="-2">
+                        <div class="range-labels">
+                            <span>Deeper</span>
+                            <span>Higher</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="generate-btn" class="btn-primary">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    <span>Generate Narration</span>
+                </button>
+
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <span>Creating your narration...</span>
+                </div>
+
+                <div id="error-message" class="error-message hidden"></div>
+
+                <div id="audio-section" class="audio-section hidden">
+                    <div class="audio-header">
+                        <h3>Your Narration</h3>
+                        <button id="download-btn" class="btn-secondary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" x2="12" y1="15" y2="3" />
+                            </svg>
+                            Download MP3
+                        </button>
+                    </div>
+                    <audio id="audio-player" controls class="audio-player"></audio>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by Google Cloud Text-to-Speech • Neural2 Voices</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
