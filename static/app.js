@@ -1,5 +1,6 @@
 /**
- * BBC Documentary TTS - Frontend JavaScript
+ * Vietnamese TTS - Frontend JavaScript
+ * Sử dụng Cartesia API
  */
 
 // DOM Elements
@@ -8,8 +9,6 @@ const charCount = document.getElementById('char-count');
 const voiceSelect = document.getElementById('voice-select');
 const speedRange = document.getElementById('speed-range');
 const speedValue = document.getElementById('speed-value');
-const pitchRange = document.getElementById('pitch-range');
-const pitchValue = document.getElementById('pitch-value');
 const generateBtn = document.getElementById('generate-btn');
 const loading = document.getElementById('loading');
 const errorMessage = document.getElementById('error-message');
@@ -25,20 +24,56 @@ textInput.addEventListener('input', updateCharCount);
 speedRange.addEventListener('input', () => {
     speedValue.textContent = parseFloat(speedRange.value).toFixed(2);
 });
-pitchRange.addEventListener('input', () => {
-    pitchValue.textContent = parseFloat(pitchRange.value).toFixed(1);
-});
 generateBtn.addEventListener('click', generateNarration);
 downloadBtn.addEventListener('click', downloadAudio);
 
 // Initialize
-function init() {
+async function init() {
     updateCharCount();
+    await loadVoices();
 
-    // Set default sample text
+    // Set default sample text in Vietnamese
     if (!textInput.value) {
-        textInput.value = "In the heart of the African savanna, a remarkable story unfolds. Here, where the sun paints the sky in shades of amber and gold, life persists in ways that defy imagination.";
+        textInput.value = "Xin chào, đây là bản demo chuyển văn bản thành giọng nói tiếng Việt sử dụng Cartesia AI.";
         updateCharCount();
+    }
+}
+
+// Load voices from API
+async function loadVoices() {
+    try {
+        const response = await fetch('/api/voices');
+        if (!response.ok) {
+            throw new Error('Failed to load voices');
+        }
+        const data = await response.json();
+        const voices = data.voices || [];
+
+        voiceSelect.innerHTML = '';
+
+        if (voices.length === 0) {
+            voiceSelect.innerHTML = '<option value="" disabled>Không có voice tiếng Việt</option>';
+            generateBtn.disabled = true;
+            return;
+        }
+
+        voices.forEach((voice, index) => {
+            const option = document.createElement('option');
+            option.value = voice.id;
+            option.textContent = voice.name || `Voice ${index + 1}`;
+            if (voice.description) {
+                option.title = voice.description;
+            }
+            if (index === 0) {
+                option.selected = true;
+            }
+            voiceSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error loading voices:', error);
+        voiceSelect.innerHTML = '<option value="" disabled>Lỗi tải voices</option>';
+        showError('Không thể tải danh sách voices. Vui lòng thử lại sau.');
     }
 }
 
@@ -70,7 +105,12 @@ async function generateNarration() {
     const text = textInput.value.trim();
 
     if (!text) {
-        showError('Please enter some text to narrate.');
+        showError('Vui lòng nhập văn bản để tạo giọng nói.');
+        return;
+    }
+
+    if (!voiceSelect.value) {
+        showError('Vui lòng chọn một giọng đọc.');
         return;
     }
 
@@ -90,13 +130,12 @@ async function generateNarration() {
                 text: text,
                 voice: voiceSelect.value,
                 speaking_rate: parseFloat(speedRange.value),
-                pitch: parseFloat(pitchRange.value)
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `Error: ${response.status}`);
+            throw new Error(errorData.detail || `Lỗi: ${response.status}`);
         }
 
         // Get audio blob
@@ -114,7 +153,7 @@ async function generateNarration() {
 
     } catch (error) {
         console.error('TTS Error:', error);
-        showError(error.message || 'Failed to generate narration. Please try again.');
+        showError(error.message || 'Không thể tạo giọng nói. Vui lòng thử lại.');
     } finally {
         generateBtn.disabled = false;
         loading.classList.add('hidden');

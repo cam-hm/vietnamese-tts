@@ -30,15 +30,15 @@ app.add_middleware(
 # Request model
 class SynthesizeRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000, description="Text to synthesize")
-    voice: str = Field(default="en-GB-Neural2-B", description="Voice ID")
-    speaking_rate: float = Field(default=0.9, ge=0.25, le=4.0, description="Speaking rate")
-    pitch: float = Field(default=-2.0, ge=-20.0, le=20.0, description="Voice pitch")
+    voice: str = Field(..., description="Voice ID (UUID)")
+    speaking_rate: float = Field(default=1.0, ge=0.25, le=4.0, description="Speaking rate")
 
 
 @app.get("/api/voices")
 async def get_voices():
-    """Get available voices"""
-    return tts_service.get_available_voices()
+    """Get available Vietnamese voices from Cartesia"""
+    voices = tts_service.get_available_voices()
+    return {"voices": voices}
 
 
 @app.post("/api/synthesize")
@@ -47,9 +47,8 @@ async def synthesize(request: SynthesizeRequest):
     try:
         audio_content = tts_service.synthesize(
             text=request.text,
-            voice_name=request.voice,
+            voice_id=request.voice,
             speaking_rate=request.speaking_rate,
-            pitch=request.pitch
         )
         
         return Response(

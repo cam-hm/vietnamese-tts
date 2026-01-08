@@ -1,96 +1,88 @@
 """
-TTS Service - Google Cloud Text-to-Speech wrapper
+TTS Service - Cartesia Text-to-Speech wrapper
+Chỉ sử dụng Vietnamese voices
 """
-from google.cloud import texttospeech
+from cartesia import Cartesia
 from typing import Optional
+import os
+from dotenv import load_dotenv
 
-# Available BBC documentary-style voices
-# Organized by type: Studio (broadcast), Chirp3-HD (newest), Neural2 (standard)
-AVAILABLE_VOICES = {
-    # 🎬 STUDIO VOICES - Designed for broadcast/documentary narration
-    "en-GB-Studio-B": {"name": "🎬 British Male (Studio) - Documentary", "gender": "MALE", "type": "studio"},
-    "en-GB-Studio-C": {"name": "🎬 British Female (Studio) - Documentary", "gender": "FEMALE", "type": "studio"},
-    "en-US-Studio-O": {"name": "🎬 American Male (Studio) - Documentary", "gender": "MALE", "type": "studio"},
-    "en-US-Studio-Q": {"name": "🎬 American Female (Studio) - Documentary", "gender": "FEMALE", "type": "studio"},
-    
-    # 🌟 CHIRP3-HD VOICES - Newest, most natural voices
-    "en-GB-Chirp3-HD-Charon": {"name": "🌟 British (Charon) - Ultra Natural", "gender": "NEUTRAL", "type": "chirp3"},
-    "en-GB-Chirp3-HD-Fenrir": {"name": "🌟 British (Fenrir) - Deep Narrator", "gender": "MALE", "type": "chirp3"},
-    "en-GB-Chirp3-HD-Aoede": {"name": "🌟 British (Aoede) - Warm Female", "gender": "FEMALE", "type": "chirp3"},
-    "en-US-Chirp3-HD-Charon": {"name": "🌟 American (Charon) - Ultra Natural", "gender": "NEUTRAL", "type": "chirp3"},
-    
-    # 📻 NEURAL2 VOICES - High quality standard voices
-    "en-GB-Neural2-B": {"name": "📻 British Male (Daniel)", "gender": "MALE", "type": "neural2"},
-    "en-GB-Neural2-D": {"name": "📻 British Male (James)", "gender": "MALE", "type": "neural2"},
-    "en-GB-Neural2-A": {"name": "📻 British Female (Emma)", "gender": "FEMALE", "type": "neural2"},
-    "en-GB-Neural2-C": {"name": "📻 British Female (Olivia)", "gender": "FEMALE", "type": "neural2"},
-    "en-GB-Neural2-F": {"name": "📻 British Female (Sophie)", "gender": "FEMALE", "type": "neural2"},
-    "en-US-Neural2-D": {"name": "📻 American Male (David)", "gender": "MALE", "type": "neural2"},
-    "en-US-Neural2-J": {"name": "📻 American Male (John)", "gender": "MALE", "type": "neural2"},
-}
+# Load environment variables
+load_dotenv()
+
 
 class TTSService:
     def __init__(self):
-        self.client = texttospeech.TextToSpeechClient()
+        api_key = os.getenv("CARTESIA_API_KEY")
+        if not api_key:
+            raise ValueError("CARTESIA_API_KEY environment variable is required")
+        self.client = Cartesia(api_key=api_key)
+        self._voices_cache = None
     
-    def get_available_voices(self) -> dict:
-        """Return list of available voices"""
-        return AVAILABLE_VOICES
+    def get_available_voices(self) -> list:
+        """
+        Return list of available Vietnamese voices
+        """
+        return [
+            {
+                "id": "935a9060-373c-49e4-b078-f4ea6326987a",
+                "name": "Linh - Vietnamese Female ⭐",
+                "gender": "female",
+            },
+            {
+                "id": "0e58d60a-2f1a-4252-81bd-3db6af45fb41",
+                "name": "Minh - Vietnamese Male ⭐",
+                "gender": "male",
+            },
+        ]
     
     def synthesize(
         self,
         text: str,
-        voice_name: str = "en-GB-Neural2-B",
-        speaking_rate: float = 0.9,
-        pitch: float = -2.0,
-        audio_format: str = "MP3"
+        voice_id: str,
+        speaking_rate: float = 1.0,
     ) -> bytes:
         """
-        Synthesize text to speech using Google Cloud TTS
+        Synthesize text to speech using Cartesia TTS
         
         Args:
             text: The text to synthesize
-            voice_name: Voice ID (e.g., en-GB-Neural2-B)
-            speaking_rate: Speed (0.25 to 4.0, default 0.9 for documentary)
-            pitch: Voice pitch (-20.0 to 20.0, default -2.0 for deeper voice)
-            audio_format: Output format (MP3, WAV, OGG_OPUS)
+            voice_id: Voice UUID from Cartesia
+            speaking_rate: Speed (-1.0 to 1.0, 0 is normal, negative is slower, positive is faster)
         
         Returns:
-            Audio content as bytes
+            Audio content as bytes (MP3 format)
         """
-        # Extract language code from voice name
-        language_code = "-".join(voice_name.split("-")[:2])
+        # Convert speaking_rate from 0.25-4.0 range to Cartesia's -1.0 to 1.0 range
+        # 1.0 (normal) -> 0, 0.5 -> -0.5, 2.0 -> 0.5
+        cartesia_speed = "normal"
+        if speaking_rate < 0.8:
+            cartesia_speed = "slowest"
+        elif speaking_rate < 0.95:
+            cartesia_speed = "slow"
+        elif speaking_rate > 1.3:
+            cartesia_speed = "fastest"
+        elif speaking_rate > 1.1:
+            cartesia_speed = "fast"
         
-        # Set up the input
-        synthesis_input = texttospeech.SynthesisInput(text=text)
+        audio_chunks = []
+        try:
+            for chunk in self.client.tts.bytes(
+                model_id="sonic-3",
+                transcript=text,
+                voice={"mode": "id", "id": voice_id},
+                language="vi",
+                output_format={
+                    "container": "mp3",
+                    "sample_rate": 44100,
+                    "bit_rate": 128000,
+                },
+            ):
+                audio_chunks.append(chunk)
+        except Exception as e:
+            raise Exception(f"TTS synthesis failed: {str(e)}")
         
-        # Configure voice
-        voice = texttospeech.VoiceSelectionParams(
-            language_code=language_code,
-            name=voice_name
-        )
-        
-        # Configure audio output
-        audio_encoding_map = {
-            "MP3": texttospeech.AudioEncoding.MP3,
-            "WAV": texttospeech.AudioEncoding.LINEAR16,
-            "OGG_OPUS": texttospeech.AudioEncoding.OGG_OPUS,
-        }
-        
-        audio_config = texttospeech.AudioConfig(
-            audio_encoding=audio_encoding_map.get(audio_format, texttospeech.AudioEncoding.MP3),
-            speaking_rate=max(0.25, min(4.0, speaking_rate)),
-            pitch=max(-20.0, min(20.0, pitch))
-        )
-        
-        # Perform the synthesis
-        response = self.client.synthesize_speech(
-            input=synthesis_input,
-            voice=voice,
-            audio_config=audio_config
-        )
-        
-        return response.audio_content
+        return b"".join(audio_chunks)
 
 
 # Singleton instance
